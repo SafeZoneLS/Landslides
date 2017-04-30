@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+    var map;
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 2,
+          center: new google.maps.LatLng(2.8,-187.3),
+          mapTypeId: 'terrain'
+        });
+
+        // Create a <script> tag and set the USGS URL as the source.
+        var script = document.createElement('script');
+        // This example uses a local copy of the GeoJSON stored at
+        // http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojsonp
+        script.src = 'https://developers.google.com/maps/documentation/javascript/examples/json/earthquake_GeoJSONP.js';
+        document.getElementsByTagName('head')[0].appendChild(script);
+      }
+      var f = "slides.json";
+      var keys = ["countryname", "landslide_size", "date", "nearest_places", "location_accuracy", "injuries", "fatalities", "photos_link", "source_name", "source_link"];
+      
+
+      // Loop through the results array and place a marker for each
+      // set of coordinates.
+      function getInfoCallback(map2, content) {
+      var infowindow = new google.maps.InfoWindow({content: content});
+      if (navigator.geolocation) {
+     navigator.geolocation.getCurrentPosition(function (position) {
+         initialLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+         map.setCenter(initialLocation);
+         map.setZoom(7);
+     });
+ }
+      return function() {
+            infowindow.setContent(content); 
+            infowindow.open(map2, this);
+        };
+    }
+      window.eqfeed_callback = function(results) {
+        var rawFile = new XMLHttpRequest();
+          rawFile.open("GET", f, false);
+          rawFile.onreadystatechange = function ()
+          {
+              if(rawFile.readyState === 4)
+              {
+                  if(rawFile.status === 200 || rawFile.status == 0)
+                  {
+                      var allText = rawFile.responseText;
+                      var jso = JSON.parse(allText);
+
+                      for(var i = 0; i < jso.length; i++){
+                          
+                          var lat = jso[i]["geolocation"]["coordinates"][1];
+                          var lon = jso[i]["geolocation"]["coordinates"][0];
+                          var latLng = new google.maps.LatLng(lat,lon);
+                          var marker = new google.maps.Marker({
+                            position: latLng,
+                            map: map
+                          });
+                          
+
+                          var contentString = "";
+
+                          for(var j = 0; j < keys.length; j++){
+                            var key = keys[j];
+                            var val = jso[i][key];
+                            var val2 = new String(val);
+                            if(val2.valueOf() == new String("Unknown").valueOf() || val2.valueOf() == new String("unknown").valueOf() || val2.valueOf() == new String("undefined").valueOf()){
+
+                            }
+                            else{
+                              
+                              if(key.valueOf() == new String("location_accuracy").valueOf()){
+                              //  alert(val);
+                                //alert("nao removeu");
+                                //val = val.replace("/_/g", " ");
+                              }
+                              if(key == "fatalities"){
+                                key = "Fatalities";
+                              }
+
+                              if(key == "countryname"){
+                                key = "Country Name";
+                              }
+                              if(key == "landslide_size"){
+                                key = "Landslide size";
+                                val = val.split("_").join(" ");
+                              }
+                              if(key == "date"){
+                                key = "Date/time";
+                              }
+                              if(key == "nearest_places"){
+                                key = "Nearest places";
+
+                              }
+                              if(key == "location_accuracy"){
+                                key = "Location accuracy";
+                                val = val.split("_").join(" ");
+                              }
+                              if(key == "source_link"){
+                                key = "Source link";
+                                val = "<a href=\"" + val + "\"/>"+val+"</a>";
+                              }
+                              if(key == "photos_link"){
+                                key = "Photos link";
+                                val = "<a href=\"" + val + "\"/>"+val+"</a>";
+                              }
+                              if(key == "source_name"){
+                                key = "Source name";
+                              }
+
+
+                            contentString = contentString + "<b>" + key + "</b>";
+                            contentString +=": ";
+                            contentString = contentString + val;
+                            contentString = contentString + '<br>';
+                          }
+                          }
+                          
+                          var infowindow = new google.maps.InfoWindow({
+                                    content: contentString
+                                  });
+
+                                google.maps.event.addListener(marker, 'click', getInfoCallback(map, contentString));
+                      }
+                      
+                  }
+              }
+          }
+          rawFile.send(null);
+      }
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCNrInNG17dGYw0QUpqm7YXyoEpnyhLB5M&callback=initMap">
+    </script>
+  </body>
+</html>
